@@ -1,0 +1,179 @@
+version: '2'
+services:
+ snortServeur:
+   image: patrickneise/snort
+   container_name: snortServeur
+   volumes:
+    - /home/richard/Richard/stages/BANKeVI/realisation/snort/log:/var/log/snort
+    - /home/richard/Richard/stages/BANKeVI/realisation/snort/myrules.rules:/etc/snort/rules/local.rules
+   environment:
+     INTERFACE: eth0
+     HOST_NET: 172.100.0.0
+   command: ["-i", "eth0"]
+   networks:
+     reseau:
+      ipv4_address: "172.100.0.2"
+
+ proxyServeur:
+  image: sameersbn/squid:3.5.27-2
+  container_name: proxyServeur
+  ports:
+   - 3128:3128
+  volumes:
+   - /home/richard/Richard/stages/BANKeVI/realisation/squid/cache:/var/spool/squid
+   - /home/richard/Richard/stages/BANKeVI/realisation/squid/squid.conf:/etc/squid/squid.conf
+  restart: always
+  links:
+   - snortServeur:snortServeur
+  networks:
+   reseau:
+    ipv4_address: "172.100.0.3"
+  
+ mysqlServeur:
+  image: mysql
+  command: --default-authentication-plugin=mysql_native_password
+  restart: always
+  ports:
+     - '330:3306'
+  volumes:
+      - /home/richard/Richard/stages/BANKeVI/realisation/mysql/donnees:/var/lib/mysql
+  environment:
+   MYSQL_ROOT_PASSWORD: chicha
+   MYSQL_USER: richard
+   MYSQL_PASSWORD: chicha
+  container_name: mysqlServeur
+  links:
+   - proxyServeur:proxyServeur
+  networks:
+   reseau:
+    ipv4_address: "172.100.0.4"
+
+ mailServeur:
+  image: djfarrelly/maildev
+  container_name: mailServeur
+  links:
+   - webServeur:webServeur
+  ports:
+   - 1080:80
+   - 1025:25  
+  networks:
+   reseau:
+    ipv4_address: "172.100.0.5"
+
+ phpServeur:
+  image: php:7.1-fpm
+  container_name: phpServeur
+  volumes:
+   -  /home/richard/Richard/stages/BANKeVI/test/:/srv/http
+  links:
+   - mysqlServeur:mysql
+  ports:
+   - 9000:9000
+  networks:
+   reseau:
+    ipv4_address: "172.100.0.6"
+
+ webServeur:
+  image: nginx
+  container_name: webServeur
+  environment:
+   - VIRTUAL_PROTO=https
+   - VIRTUAL_HOST=site1.bankevi.com
+   - export ftp_proxy=http://172.100.0.3:3128
+   - export http_proxy=http://172.100.0.3:3128
+   - export https_proxy=http://172.100.0.3:3128
+  links:
+   - phpServeur:phpServeur
+   - proxyServeur:proxyServeur
+  volumes:
+   - /home/richard/Richard/stages/BANKeVI/realisation/nginx/html:/usr/share/nginx/html
+   - /home/richard/Richard/stages/BANKeVI/realisation/nginx/nginx.conf:/nginx.conf
+  ports:
+   - 81:80
+  command: nginx -c /nginx.conf
+  networks:
+   reseau:
+    ipv4_address: "172.100.0.7"
+ 
+ phpmyadmin:
+   image: corbinu/docker-phpmyadmin
+   restart: always
+   container_name: phpmyadminServeur
+   environment: 
+    PMA_HOST: mysqlServeur
+    MYSQL_ROOT_PASSWORD: chicha
+  
+   ports:
+    - 8081:80
+  
+   networks:
+    reseau:
+     ipv4_address: "172.100.0.8"
+
+ unbuntu:
+  image: leemiracle/unbuntu 
+  container_name: unbuntu
+  volumes:
+     - /home/richard/Richard/stages/BANKeVI/realisation/unbuntu/data:/data
+  networks:
+    reseau:
+     ipv4_address: "172.100.0.9"
+
+ ftpServeur:
+  image: hauptmedia/proftpd
+  ports:
+    - "21:21"
+    - "20:20"
+  environment:
+    - FTP_USERNAME=richard
+    - FTP_PASSWORD=chicha
+  container_name: ftpServeur
+  volumes:
+   - /home/richard/Richard/stages/BANKeVI/realisation/ftp/ftp:/ftp
+  networks:
+    reseau:
+     ipv4_address: "172.100.0.10"
+
+ vpnServeur:
+    cap_add:
+     - NET_ADMIN
+    image: kylemanna/openvpn
+    container_name: vpnServeur
+    ports:
+     - "1194:1194/udp"
+    restart: always
+    volumes:
+     - /home/richard/Richard/stages/BANKeVI/realisation/vpn/data:/etc/openvpn
+    networks:
+     reseau:
+      ipv4_address: "172.100.0.11"
+
+ dnsServeur:
+  restart: always
+  container_name: dnsServeur
+  image: sameersbn/bind:latest
+  dns: 127.0.0.1
+  environment:
+    - ROOT_PASSWORD=@chicha99761402
+  ports:
+   - "54:53/udp"
+   - "54:53/tcp"
+   - "10000:10000/tcp"
+  volumes:
+    - /home/richard/Richard/stages/BANKeVI/realisation/dns/data:/data
+  networks:
+     reseau:
+      ipv4_address: "172.100.0.12"
+
+
+networks:
+   reseau:
+    driver: bridge
+    driver_opts:
+     com.docker.network.enable_ipv6: "false"
+    ipam:
+      driver: default
+      config:
+      - subnet: 172.100.0.0/24
+        gateway: 172.100.0.1
+    

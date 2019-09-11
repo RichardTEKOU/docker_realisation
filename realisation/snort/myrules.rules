@@ -1,0 +1,9 @@
+alert tcp any any -> $HOME_NET 21 (classtype:attempted-user; msg:"Attaque au serveur ftp détectée";sid:00001; rev:1;) 
+alert tcp any any -> $HOME_NET 23 (classtype:attempted-user; msg:"Connexion Telnet détectée";sid:00002; rev:2;)
+alert icmp any any -> $HOME_NET any (classtype:attempted-user; msg:"Connexion Icmp détectée";sid:00003; rev:3;)
+
+#alert icmp any any <> any any (msg:"Requette Icmp bloquée";sid:00004; rev:4;)
+#drop icmp any any -> $HOME_NET any (classtype:attempted-user; msg:"l'IPS fonctionne";sid:00005; rev:5;)
+#drop icmp any any -> any any (classtype:attempted-user; msg:"l'IPS fonctionne";)
+#sdrop icmp any any -> $HOME_NET any (msg:"requete icmp drop détectée"; sid:00006; rev:6;)
+#alert icmp any any -> $HOME_NET any (msg:"obed k"; sid:00007; rev:2;)

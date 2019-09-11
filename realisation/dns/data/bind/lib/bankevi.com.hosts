@@ -1,0 +1,10 @@
+$ttl 38400
+bankevi.com.	IN	SOA	85c1f8a57920. bankevi.com (
+			1568052467
+			10800
+			3600
+			604800
+			38400 )
+bankevi.com.	IN	NS	dnsServeur
+bankevi.com.	IN	A	172.100.0.12
+www.bankevi.com.	IN	A	172.100.0.7

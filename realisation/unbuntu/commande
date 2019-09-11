@@ -1,0 +1,2 @@
+docker run -it --net=realisation_reseau leemiracle/unbuntu /bin/bash pour creer le conteneur de test
+docker exec 2d0f0b4ef619 snort -v -c /etc/snort/snort.conf pour lancer Snort
